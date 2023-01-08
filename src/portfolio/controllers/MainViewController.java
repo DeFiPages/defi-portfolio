@@ -1,7 +1,5 @@
 package portfolio.controllers;
-
 import com.sun.javafx.charts.Legend;
-import javafx.animation.PauseTransition;
 import javafx.beans.property.*;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
@@ -17,12 +15,9 @@ import javafx.scene.control.Tooltip;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
 import javafx.stage.StageStyle;
-import javafx.util.Duration;
-import portfolio.Main;
 import portfolio.models.*;
 import portfolio.services.ExportService;
 import portfolio.views.MainView;
-
 import javax.swing.*;
 import java.awt.*;
 import java.awt.datatransfer.Clipboard;
@@ -59,7 +54,7 @@ public class MainViewController {
     public boolean updateSingleton = true;
     final Delta dragDelta = new Delta();
     public Process defidProcess;
-    private static MainViewController OBJ = null;
+    private static MainViewController OBJ;
 
     static {
         OBJ = new MainViewController();
@@ -83,8 +78,7 @@ public class MainViewController {
         this.expService = new ExportService(this);
         this.coinPriceController.updateCoinPriceData();
         this.coinPriceController.updateStockPriceData();
-        Object a = this.coinPriceController.stockPriceMap;
-        //this.transactionController.updateBalanceList();
+
         // get last block locally
         this.strCurrentBlockLocally.set(Integer.toString(transactionController.getLocalBlockCount()));
 
@@ -117,7 +111,6 @@ public class MainViewController {
         try {
             File f = new File(SettingsController.getInstance().DEFI_PORTFOLIO_HOME +"StockPricesPythonUpdate.portfolio");
             f.createNewFile();
-
         } catch (Exception e) {
             SettingsController.getInstance().logger.warning("Could not write python update file."); }
 
@@ -328,7 +321,6 @@ public class MainViewController {
             this.settingsController.logger.warning("Exception occured: " + e.toString());
         }
 
-
         try {
             File f = new File(SettingsController.getInstance().DEFI_PORTFOLIO_HOME + "pythonUpdate.portfolio");
             f.createNewFile();
@@ -468,13 +460,6 @@ public class MainViewController {
             localeDecimal = Locale.US;
         }
         for (BalanceModel balanceModel : this.transactionController.getBalanceList()) {
-           // if ((balanceModel.getToken1NameValue().equals("DUSD") || balanceModel.getToken2NameValue().equals("DUSD")) &&  !balanceModel.getToken2NameValue().equals("-")) {
-           //     double factor = 1.0;
-
-             //   if(!SettingsController.getInstance().selectedFiatCurrency.getValue().contains("USD")) factor = this.transactionController.getCurrencyFactor();
-             //   balanceModel.setFiat1(factor*balanceModel.getCrypto1Value()*Double.parseDouble(this.transactionController.getPrice(balanceModel.getToken1NameValue()+"-"+balanceModel.getToken2NameValue())));
-             //   balanceModel.setFiat2(factor*balanceModel.getCrypto2Value());
-            //}
 
             if (balanceModel.getToken2NameValue().equals("-")) {
                 pieChartData.add(new PieChart.Data(balanceModel.getToken1NameValue(), balanceModel.getFiat1Value()));
@@ -569,7 +554,7 @@ public class MainViewController {
 
             double currentDFIPrice = CoinPriceController.getInstance().getPriceFromTimeStamp(false,"DFI" + this.settingsController.selectedFiatCurrency.getValue(), System.currentTimeMillis());
             double currentDUSDPrice = CoinPriceController.getInstance().getPriceFromTimeStamp(true,"DUSD"+ this.settingsController.selectedFiatCurrency.getValue(),System.currentTimeMillis());
-            double currentCoin1Price  = currentDFIPrice;
+            double currentCoin1Price;
             TreeMap<String, ImpermanentLossModel> ilList = TransactionController.getInstance().impermanentLossList;
             double inputTotal = 0.0;
             double currentTotal = 0.0;
@@ -592,8 +577,8 @@ public class MainViewController {
                     }
                 }
 
-                String lossValueString = "";
-                String valuePoolString = "";
+                String lossValueString;
+                String valuePoolString;
 
                 if(valuePool == 0){
                     lossValueString = "-";
@@ -963,7 +948,7 @@ public class MainViewController {
             fileChooser.setInitialDirectory(new File(this.settingsController.lastExportPath));
         }
 
-        String exportPath = "";
+        String exportPath;
         Date date = new Date(System.currentTimeMillis());
         DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
         if (filter.equals("DAILY")) {
@@ -1102,7 +1087,7 @@ public class MainViewController {
     }
 
     public void showExportSuccessfullWindow() throws IOException {
-        Parent rootExportFinished = null;
+        Parent rootExportFinished;
         rootExportFinished = FXMLLoader.load(getClass().getResource("../views/ExportSuccessfullView.fxml"));
         Scene sceneExportFinished = new Scene(rootExportFinished);
         Stage stageExportFinished = new Stage();
@@ -1129,7 +1114,7 @@ public class MainViewController {
         }
     }
     public void showExportErrorWindow() throws IOException {
-        Parent rootExportFinished = null;
+        Parent rootExportFinished;
         rootExportFinished = FXMLLoader.load(getClass().getResource("../views/ExportErrorView.fxml"));
         Scene sceneExportFinished = new Scene(rootExportFinished);
         Stage stageExportFinished = new Stage();

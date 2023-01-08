@@ -1,10 +1,8 @@
 package portfolio.controllers;
-
 import com.litesoftwares.coingecko.CoinGeckoApiClient;
 import com.litesoftwares.coingecko.impl.CoinGeckoApiClientImpl;
 import org.json.simple.JSONObject;
 import org.json.simple.JSONValue;
-import portfolio.models.BalanceModel;
 import portfolio.models.CoinPriceModel;
 import java.io.*;
 import java.net.HttpURLConnection;
@@ -39,7 +37,6 @@ public class CoinPriceController {
             try {
                 this.stockPriceMap = new TreeMap<>();
 
-
                 BufferedReader reader;
                 reader = new BufferedReader(new FileReader(
                         this.strStockPriceData));
@@ -58,7 +55,6 @@ public class CoinPriceController {
                             this.stockPriceMap.get(this.Tokens[i].replace("USD","")).put(Long.parseLong(transactionSplit[0]),Double.parseDouble(transactionSplit[i]));
                         }
                     }
-
                     line = reader.readLine();
                 }
 
@@ -368,20 +364,14 @@ public class CoinPriceController {
     }
 
     public boolean isCrypto(String tokenName) {
-
-            if(tokenName.contains("DFI")||tokenName.contains("ETH")||tokenName.contains("BTC")||tokenName.contains("USDT")||tokenName.contains("DOGE")||tokenName.contains("LTC")||tokenName.contains("BCH")||tokenName.contains("USDC")){
-                  return true;
-            }else{
-                return false;
-            }
+            return (tokenName.contains("DFI")||tokenName.contains("ETH")||tokenName.contains("BTC")||tokenName.contains("USDT")||tokenName.contains("DOGE")||tokenName.contains("LTC")||tokenName.contains("BCH")||tokenName.contains("USDC"));
         }
 
     public double getCurrencyFactor(){
-
         try {
             HttpURLConnection connection = (HttpURLConnection) new URL("https://cdn.jsdelivr.net/gh/fawazahmed0/currency-api@1/latest/currencies/usd/"+SettingsController.getInstance().selectedFiatCurrency.getValue().toLowerCase()+".json").openConnection();
             String jsonText = "";
-            String line = "";
+            String line;
             try (BufferedReader br = new BufferedReader(new InputStreamReader(connection.getInputStream()))) {
                 while((line=br.readLine()) != null){
                     jsonText = jsonText+line;

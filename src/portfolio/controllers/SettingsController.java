@@ -31,7 +31,7 @@ public class SettingsController {
         try {
             OBJ = new SettingsController();
         } catch (IOException e) {
-            SettingsController.getInstance().logger.warning("Exception occured: " + e.toString());
+            SettingsController.getInstance().logger.warning("Exception occured: " + e);
         }
     }
 
@@ -146,8 +146,7 @@ public class SettingsController {
         File f = new File(savePath);
         if(f.exists() && !f.isDirectory()) {
             try (BufferedReader br = new BufferedReader(new FileReader(savePath))) {
-                String line;
-                while ((line = br.readLine()) != null) {
+                while (( br.readLine()) != null) {
                    nrTokens++;
                 }
             }catch (IOException e) {
@@ -167,7 +166,6 @@ public class SettingsController {
                 e.printStackTrace();
             }
         }
-        int b = 0;
     }
     public void loadAddresses(){
         String savePath = this.DEFI_PORTFOLIO_HOME + "Addresses.csv";
