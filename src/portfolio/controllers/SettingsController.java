@@ -23,7 +23,9 @@ import java.util.logging.SimpleFormatter;
 
 
 public class SettingsController {
-    public String Version = "V1.6.2";
+
+    public String Version = "V1.7";
+
 
     private static SettingsController OBJ = null;
 
@@ -31,7 +33,7 @@ public class SettingsController {
         try {
             OBJ = new SettingsController();
         } catch (IOException e) {
-            SettingsController.getInstance().logger.warning("Exception occured: " + e.toString());
+            SettingsController.getInstance().logger.warning("Exception occured: " + e);
         }
     }
 
@@ -70,7 +72,8 @@ public class SettingsController {
 
     public StringProperty lastUpdate = new SimpleStringProperty("-");
     //Combo box filling
-    public String[] cryptoCurrencies = new String[]{"BTC-DFI", "ETH-DFI", "USDT-DFI", "LTC-DFI", "BCH-DFI", "DOGE-DFI", "USDC-DFI","DUSD-DFI","TSLA-DUSD","SPY-DUSD","QQQ-DUSD","PLTR-DUSD","AAPL-DUSD","GME-DUSD","GOOGL-DUSD","BABA-DUSD","ARKK-DUSD","TLT-DUSD","GLD-DUSD","SLV-DUSD","PDBC-DUSD","URTH-DUSD","NVDA-DUSD","AMZN-DUSD","EEM-DUSD","COIN-DUSD","INTC-DUSD","DIS-DUSD","MSFT-DUSD","NFLX-DUSD","VOO-DUSD","MSTR-DUSD","FB-DUSD","MCHI-DUSD"};
+
+    public String[] cryptoCurrencies;//{"BTC-DFI", "ETH-DFI", "USDT-DFI", "LTC-DFI", "BCH-DFI", "DOGE-DFI", "USDC-DFI","DUSD-DFI","TSLA-DUSD","SPY-DUSD","QQQ-DUSD","PLTR-DUSD","AAPL-DUSD","GME-DUSD","GOOGL-DUSD","BABA-DUSD","ARKK-DUSD","TLT-DUSD","GLD-DUSD","SLV-DUSD","PDBC-DUSD","URTH-DUSD","NVDA-DUSD","AMZN-DUSD","EEM-DUSD","COIN-DUSD","INTC-DUSD","DIS-DUSD","MSFT-DUSD","NFLX-DUSD","VOO-DUSD","MSTR-DUSD","FB-DUSD","MCHI-DUSD"};
     public String[] plotCurrency = new String[]{"Coin", "Daily Fiat", "Current Fiat"};
     public String[] styleModes = new String[]{"Light Mode", "Dark Mode"};
     public String[] datasources = new String[]{"Active Wallet", "All Wallets"};
@@ -99,6 +102,7 @@ public class SettingsController {
     public String strTransactionData = "transactionData.portfolio";
     public String strCoinPriceData = "coinPriceData.portfolio";
     public String strStockPriceData = "stockTockenPrices.portfolio";
+    public String strStockTokens = "stockTockens.portfolio";
     public String[] languages = new String[]{"English", "Deutsch","Espa\u00F1ol","Bokm\u00E5l","Nederlands"};
     public String[] currencies = new String[]{"EUR", "USD", "CHF"};
     public String[] decSeperators = new String[]{".", ","};
@@ -137,8 +141,35 @@ public class SettingsController {
         this.loadAddresses();
         updateLanguage();
         getConfig();
+        loadCryptoCurrencysList();
     }
-
+    public void loadCryptoCurrencysList(){
+        int nrTokens = 0;
+        String savePath = this.DEFI_PORTFOLIO_HOME + this.strStockTokens;
+        File f = new File(savePath);
+        if(f.exists() && !f.isDirectory()) {
+            try (BufferedReader br = new BufferedReader(new FileReader(savePath))) {
+                while (( br.readLine()) != null) {
+                   nrTokens++;
+                }
+            }catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+        int i = 0;
+        if(f.exists() && !f.isDirectory()) {
+            cryptoCurrencies = new String[nrTokens];
+            try (BufferedReader br = new BufferedReader(new FileReader(savePath))) {
+                String line;
+                while ((line = br.readLine()) != null) {
+                    cryptoCurrencies[i]=line;
+                    i++;
+                }
+            }catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+    }
     public void loadAddresses(){
         String savePath = this.DEFI_PORTFOLIO_HOME + "Addresses.csv";
         File f = new File(savePath);

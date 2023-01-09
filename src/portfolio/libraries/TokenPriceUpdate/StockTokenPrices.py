@@ -6,6 +6,8 @@ import numpy
 import os
 import pathlib
 import platform
+import requests
+import pandas
 
 if __name__ == '__main__':
 
@@ -20,8 +22,26 @@ if __name__ == '__main__':
     today = date.today()
     strDate = today.strftime("%Y-%m-%d")
     strStartDate = '2021-11-01'
-    Tokens = ['TSLA', 'GME', 'GOOGL', 'BABA', 'PLTR', 'AAPL', 'SPY', 'QQQ', 'PDBC', 'VNQ', 'ARKK', 'GLD', 'URTH', 'TLT',
-              'SLV','COIN','AMZN','NVDA','EEM','INTC','DIS','MSFT','NFLX','VOO','MSTR','FB','MCHI']
+
+    Tokens = []
+   # Tokens = ['TSLA', 'GME', 'GOOGL', 'BABA', 'PLTR', 'AAPL', 'SPY', 'QQQ', 'PDBC', 'VNQ', 'ARKK', 'GLD', 'URTH', 'TLT',
+   #           'SLV','COIN','AMZN','NVDA','EEM','INTC','DIS','MSFT','NFLX','VOO','MSTR','FB','MCHI','UNG','CS','PYPL','PPLT','XLRE','BRK-B',
+   #           'XLE','DAX','TAN','USO','PDBC','GS','XOM','URA','VNQ','ADDYY','KO','PG','SAP','ARKX','VBK','UL','GOVT','WMT','JNJ']
+    r = requests.get("https://api.defichain.io/v1/listtokens")
+    r_dictionary = r.json()
+    r_dictionary = pandas.DataFrame.from_dict(r_dictionary, orient='index')
+    for iToken in range(0, r_dictionary.__len__()):
+        print(iToken)
+        if r_dictionary.iloc[iToken]['isDAT'] == True and r_dictionary.iloc[iToken]['mintable'] == True and r_dictionary.iloc[iToken]['name'].startswith('d'):
+            Tokens.append(r_dictionary.iloc[iToken]['symbol'])
+   # rename Fb to Meta
+    if Tokens.__contains__('FB'):
+        Tokens.remove('FB')
+        Tokens.append('META')
+    if Tokens.__contains__('BRK.B'):
+        Tokens.remove('BRK.B')
+        Tokens.append('BRK-B')
+
     resultUSD = pandas.DataFrame()
 
     for token in Tokens:
@@ -43,10 +63,10 @@ if __name__ == '__main__':
 #    resultEUR = resultUSD / EURUSD['Low']
 
     result['Date'] = result.index
-    result = result[
-        ['Date', 'TSLAUSD', 'GMEUSD', 'GOOGLUSD', 'BABAUSD', 'PLTRUSD', 'AAPLUSD', 'SPYUSD', 'QQQUSD', 'PDBCUSD',
-         'VNQUSD', 'ARKKUSD', 'GLDUSD', 'URTHUSD', 'TLTUSD', 'SLVUSD','COINUSD','AMZNUSD','NVDAUSD','EEMUSD',
-         'INTCUSD','DISUSD','MSFTUSD','NFLXUSD','VOOUSD','MSTRUSD','FBUSD','MCHIUSD']]
+
+    first_column = result.pop('Date')
+    result.insert(0, 'Date', first_column)
+
 
     index = pandas.DatetimeIndex(result['Date'])
     index = index.astype(numpy.int64).to_series() / 1000000000
@@ -56,4 +76,17 @@ if __name__ == '__main__':
 
     result.to_csv(pathPortfolioData + '/stockTockenPrices.portfolio', mode='w', header=True, sep=';', index=False)
 
+    TokensDf = pandas.DataFrame(Tokens)
+    TokensDf[0] = TokensDf[0].astype(str) +'-DUSD';
+    TokensDf.loc[TokensDf.index.max() + 1] = ['BTC-DFI']
+    TokensDf.loc[TokensDf.index.max() + 1] = ['ETH-DFI']
+    TokensDf.loc[TokensDf.index.max() + 1] = ['USDT-DFI']
+    TokensDf.loc[TokensDf.index.max() + 1] = ['LTC-DFI']
+    TokensDf.loc[TokensDf.index.max() + 1] = ['BCH-DFI']
+    TokensDf.loc[TokensDf.index.max() + 1] = ['DOGE-DFI']
+    TokensDf.loc[TokensDf.index.max() + 1] = ['USDC-DFI']
+    TokensDf.loc[TokensDf.index.max() + 1] = ['DUSD-DFI']
+
+
+    TokensDf.to_csv(pathPortfolioData + '/stockTockens.portfolio', mode='w', header=False, sep=';', index=False)
     os.remove(pathPortfolioData + '/StockPricesPythonUpdate.portfolio')

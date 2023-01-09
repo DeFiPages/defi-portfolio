@@ -1,10 +1,8 @@
 package portfolio.controllers;
-
 import com.litesoftwares.coingecko.CoinGeckoApiClient;
 import com.litesoftwares.coingecko.impl.CoinGeckoApiClientImpl;
 import org.json.simple.JSONObject;
 import org.json.simple.JSONValue;
-import portfolio.models.BalanceModel;
 import portfolio.models.CoinPriceModel;
 import java.io.*;
 import java.net.HttpURLConnection;
@@ -20,6 +18,7 @@ public class CoinPriceController {
     String strCoinPriceData = SettingsController.getInstance().DEFI_PORTFOLIO_HOME + SettingsController.getInstance().strCoinPriceData;
     String strStockPriceData = SettingsController.getInstance().DEFI_PORTFOLIO_HOME + SettingsController.getInstance().strStockPriceData;
     public TreeMap<String, TreeMap<Long, Double>> stockPriceMap = new TreeMap<>();
+    String[] Tokens = new String[0];
         private static CoinPriceController OBJ;
 
         static {
@@ -38,7 +37,6 @@ public class CoinPriceController {
             try {
                 this.stockPriceMap = new TreeMap<>();
 
-
                 BufferedReader reader;
                 reader = new BufferedReader(new FileReader(
                         this.strStockPriceData));
@@ -47,41 +45,16 @@ public class CoinPriceController {
                 while (line != null) {
                     String[] transactionSplit = line.split(";");
                     if(row == 1){
+                        this.Tokens = transactionSplit;
                         row = row+1;
                         for(String pools:transactionSplit){
                             if(!pools.contains("Date")) this.stockPriceMap.put(pools.replace("USD",""),new TreeMap<>());
                         }
                     }else{
-                        this.stockPriceMap.get("TSLA").put(Long.parseLong(transactionSplit[0]),Double.parseDouble(transactionSplit[1]));
-                        this.stockPriceMap.get("GME").put(Long.parseLong(transactionSplit[0]),Double.parseDouble(transactionSplit[2]));
-                        this.stockPriceMap.get("GOOGL").put(Long.parseLong(transactionSplit[0]),Double.parseDouble(transactionSplit[3]));
-                        this.stockPriceMap.get("BABA").put(Long.parseLong(transactionSplit[0]),Double.parseDouble(transactionSplit[4]));
-                        this.stockPriceMap.get("PLTR").put(Long.parseLong(transactionSplit[0]),Double.parseDouble(transactionSplit[5]));
-                        this.stockPriceMap.get("AAPL").put(Long.parseLong(transactionSplit[0]),Double.parseDouble(transactionSplit[6]));
-                        this.stockPriceMap.get("SPY").put(Long.parseLong(transactionSplit[0]),Double.parseDouble(transactionSplit[7]));
-                        this.stockPriceMap.get("QQQ").put(Long.parseLong(transactionSplit[0]),Double.parseDouble(transactionSplit[8]));
-                        this.stockPriceMap.get("PDBC").put(Long.parseLong(transactionSplit[0]),Double.parseDouble(transactionSplit[9]));
-                        this.stockPriceMap.get("VNQ").put(Long.parseLong(transactionSplit[0]),Double.parseDouble(transactionSplit[10]));
-                        this.stockPriceMap.get("ARKK").put(Long.parseLong(transactionSplit[0]),Double.parseDouble(transactionSplit[11]));
-                        this.stockPriceMap.get("GLD").put(Long.parseLong(transactionSplit[0]),Double.parseDouble(transactionSplit[12]));
-                        this.stockPriceMap.get("URTH").put(Long.parseLong(transactionSplit[0]),Double.parseDouble(transactionSplit[13]));
-                        this.stockPriceMap.get("TLT").put(Long.parseLong(transactionSplit[0]),Double.parseDouble(transactionSplit[14]));
-                        this.stockPriceMap.get("SLV").put(Long.parseLong(transactionSplit[0]),Double.parseDouble(transactionSplit[15]));
-                        this.stockPriceMap.get("COIN").put(Long.parseLong(transactionSplit[0]),Double.parseDouble(transactionSplit[16]));
-                        this.stockPriceMap.get("AMZN").put(Long.parseLong(transactionSplit[0]),Double.parseDouble(transactionSplit[17]));
-                        this.stockPriceMap.get("NVDA").put(Long.parseLong(transactionSplit[0]),Double.parseDouble(transactionSplit[18]));
-                        this.stockPriceMap.get("EEM").put(Long.parseLong(transactionSplit[0]),Double.parseDouble(transactionSplit[19]));
-                        this.stockPriceMap.get("INTC").put(Long.parseLong(transactionSplit[0]),Double.parseDouble(transactionSplit[20]));
-                        this.stockPriceMap.get("DIS").put(Long.parseLong(transactionSplit[0]),Double.parseDouble(transactionSplit[21]));
-                        this.stockPriceMap.get("MSFT").put(Long.parseLong(transactionSplit[0]),Double.parseDouble(transactionSplit[22]));
-                        this.stockPriceMap.get("NFLX").put(Long.parseLong(transactionSplit[0]),Double.parseDouble(transactionSplit[23]));
-                        this.stockPriceMap.get("VOO").put(Long.parseLong(transactionSplit[0]),Double.parseDouble(transactionSplit[24]));
-                        this.stockPriceMap.get("MSTR").put(Long.parseLong(transactionSplit[0]),Double.parseDouble(transactionSplit[25]));
-                        this.stockPriceMap.get("FB").put(Long.parseLong(transactionSplit[0]),Double.parseDouble(transactionSplit[26]));
-                        this.stockPriceMap.get("MCHI").put(Long.parseLong(transactionSplit[0]),Double.parseDouble(transactionSplit[27]));
-
+                        for(int i = 1;i< this.Tokens.length-1;i++){
+                            this.stockPriceMap.get(this.Tokens[i].replace("USD","")).put(Long.parseLong(transactionSplit[0]),Double.parseDouble(transactionSplit[i]));
+                        }
                     }
-
                     line = reader.readLine();
                 }
 
@@ -391,20 +364,14 @@ public class CoinPriceController {
     }
 
     public boolean isCrypto(String tokenName) {
-
-            if(tokenName.contains("DFI")||tokenName.contains("ETH")||tokenName.contains("BTC")||tokenName.contains("USDT")||tokenName.contains("DOGE")||tokenName.contains("LTC")||tokenName.contains("BCH")||tokenName.contains("USDC")){
-                  return true;
-            }else{
-                return false;
-            }
+            return (tokenName.contains("DFI")||tokenName.contains("ETH")||tokenName.contains("BTC")||tokenName.contains("USDT")||tokenName.contains("DOGE")||tokenName.contains("LTC")||tokenName.contains("BCH")||tokenName.contains("USDC"));
         }
 
     public double getCurrencyFactor(){
-
         try {
             HttpURLConnection connection = (HttpURLConnection) new URL("https://cdn.jsdelivr.net/gh/fawazahmed0/currency-api@1/latest/currencies/usd/"+SettingsController.getInstance().selectedFiatCurrency.getValue().toLowerCase()+".json").openConnection();
             String jsonText = "";
-            String line = "";
+            String line;
             try (BufferedReader br = new BufferedReader(new InputStreamReader(connection.getInputStream()))) {
                 while((line=br.readLine()) != null){
                     jsonText = jsonText+line;
