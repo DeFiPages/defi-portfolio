@@ -1,6 +1,6 @@
 package portfolio.services;
 
-import com.sun.deploy.security.SelectableSecurityManager;
+//import com.sun.deploy.security.SelectableSecurityManager;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
@@ -971,27 +971,16 @@ public class ExportService {
         }
 
     public static String getIdFromPoolPair(String poolID) {
-        String pool= "-";
+        String pool = "-";
 
         try {
-            HttpURLConnection connection = (HttpURLConnection) new URL("https://ocean.defichain.com/v0/mainnet/tokens?size=1000").openConnection();
-            String jsonText = "";
-            try (BufferedReader br = new BufferedReader(new InputStreamReader(connection.getInputStream()))) {
-                jsonText = br.readLine();
-            } catch (Exception ex) {
-                SettingsController.getInstance().logger.warning("Exception occured: " + ex.toString());
-            }
-            JSONObject obj = (JSONObject) JSONValue.parse(jsonText);
-            if (obj.get("data") != null) {
-                JSONArray data = (JSONArray) obj.get("data");
-
-                for (Object token : data) {
-                    JSONObject jsonToken = (JSONObject) token;
-                    if (jsonToken.get("symbol").toString().contains(poolID)) {
-                        return pool = jsonToken.get("id").toString();
-                    }
-
+            JSONArray data = TransactionController.GetAllOceanData("https://ocean.defichain.com/v0/mainnet/tokens?size=200");
+            for (Object token : data) {
+                JSONObject jsonToken = (JSONObject) token;
+                if (jsonToken.get("symbol").toString().contains(poolID)) {
+                    return pool = jsonToken.get("id").toString();
                 }
+
             }
         } catch (IOException e) {
             SettingsController.getInstance().logger.warning("Exception occured: " + e.toString());

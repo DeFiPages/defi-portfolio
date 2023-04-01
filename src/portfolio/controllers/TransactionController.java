@@ -53,8 +53,8 @@ public class TransactionController {
     private Boolean classSingleton = true;
     public TreeMap<String, ImpermanentLossModel> impermanentLossList = new TreeMap<>();
     public TreeMap<String, Double> balanceTreeMap = new TreeMap<>();
-    public String poolPairs="";
-    public String tokens="";
+    public JSONArray poolPairs;
+    public JSONArray tokens;
     public Process ps;
 
     public TransactionController() {
@@ -66,6 +66,45 @@ public class TransactionController {
             getLocalBalanceList();
             calcImpermanentLoss();
         }
+    }
+
+    /**
+     * Retrieves paged data from the specified URL and combines the results into a single JSONArray.
+     * This method handles pagination by checking for a "page" element in the JSON response and
+     * making additional requests with the "next" parameter until no more pages are available.
+     *
+     * @param url The URL to fetch the paged data from. The URL should include the "size" query parameter
+     *            to specify the number of items per page,
+     *            e.g., "https://ocean.defichain.com/v0/mainnet/poolpairs?size=200".
+     * @return A JSONArray containing all the items from all pages of data.
+     * @throws IOException If an error occurs while making the HTTP requests or processing the responses.
+     */
+    public static JSONArray GetAllOceanData(String ocean_url) throws IOException {
+        JSONArray allData = new JSONArray();
+        String next = null;
+
+        do {
+            String urlString = ocean_url;
+            if (next != null) {
+                urlString += "&next=" + next;
+            }
+            HttpURLConnection connection = (HttpURLConnection) new URL(urlString).openConnection();
+
+            try (BufferedReader br = new BufferedReader(new InputStreamReader(connection.getInputStream()))) {
+                JSONObject response = (JSONObject) JSONValue.parse(br.readLine());
+                JSONArray data = (JSONArray) response.get("data");
+                allData.addAll(data);
+
+                if (response.get("page") != null) {
+                    JSONObject page = (JSONObject) response.get("page");
+                    next = (String) page.get("next");
+                } else {
+                    next = null;
+                }
+            }
+        } while (next != null);
+
+        return allData;
     }
 
     public void calcImpermanentLoss() {
@@ -83,7 +122,7 @@ public class TransactionController {
                         break;
 
                     if (transactionList.get(i).txIDProperty.getValue().equals(transaction.txIDProperty.getValue()) && !transactionList.get(i).cryptoCurrencyProperty.getValue().contains("-")) {
-                        if (coin1 == null && (transactionList.get(i).cryptoCurrencyProperty.getValue().equals("DFI")) ||(transactionList.get(i).cryptoCurrencyProperty.getValue().equals("DUSD")&&!isDUSDPool)) {
+                        if (coin1 == null && (transactionList.get(i).cryptoCurrencyProperty.getValue().equals("DFI")) || (transactionList.get(i).cryptoCurrencyProperty.getValue().equals("DUSD") && !isDUSDPool)) {
                             coin1 = transactionList.get(i);
                         } else if (coin2 == null) {
                             coin2 = transactionList.get(i);
@@ -237,32 +276,19 @@ public class TransactionController {
         return "No connection";
     }
 
-    public String getPoolRatio(String poolID,String priceRatio) {
+    public String getPoolRatio(String poolID, String priceRatio) {
         try {
-            HttpURLConnection connection = (HttpURLConnection) new URL("https://ocean.defichain.com/v0/mainnet/poolpairs").openConnection();
-
-            if(this.poolPairs==""){
-
-            try (BufferedReader br = new BufferedReader(new InputStreamReader(connection.getInputStream()))) {
-                this.poolPairs = br.readLine();
-            } catch (Exception ex) {
-                this.settingsController.logger.warning("Exception occured: " + ex.toString());
+            if (this.poolPairs == null) {
+                this.poolPairs = GetAllOceanData("https://ocean.defichain.com/v0/mainnet/poolpairs?size=200");
             }
-            }
-            JSONObject obj = (JSONObject) JSONValue.parse(this.poolPairs);
-            if (obj.get("data") != null) {
-
-                JSONArray data = (JSONArray) obj.get("data");
-
-                for (Object transaction : (JSONArray) data) {
-                    JSONObject jsonObject = (JSONObject)transaction;
-                    if(((JSONObject)transaction).get("id").toString().contains(poolID)){
-                        JSONObject ratio =(JSONObject)jsonObject.get("priceRatio");
-                        return ((JSONObject) ratio).get(priceRatio).toString();
-                    }
+            for (Object transaction : this.poolPairs) {
+                JSONObject jsonObject = (JSONObject) transaction;
+                if (((JSONObject) transaction).get("id").toString().contains(poolID)) {
+                    JSONObject ratio = (JSONObject) jsonObject.get("priceRatio");
+                    return ((JSONObject) ratio).get(priceRatio).toString();
                 }
-
             }
+
         } catch (IOException e) {
             this.settingsController.logger.warning("Exception occured: " + e.toString());
         }
@@ -300,35 +326,20 @@ public class TransactionController {
 
     public String getPrice(String pool) {
         try {
-            HttpURLConnection connection = (HttpURLConnection) new URL("https://ocean.defichain.com/v0/mainnet/prices?size=1000").openConnection();
-            String jsonText = "";
-            try (BufferedReader br = new BufferedReader(new InputStreamReader(connection.getInputStream()))) {
-                jsonText = br.readLine();
-            } catch (Exception ex) {
-                this.settingsController.logger.warning("Exception occured: " + ex.toString());
-            }
-            JSONObject obj = (JSONObject) JSONValue.parse(jsonText);
-            if (obj.get("data") != null) {
-
-                JSONArray data = (JSONArray) obj.get("data");
-
-                for (Object transaction : (JSONArray) data) {
-                    JSONObject jsonObject = (JSONObject)transaction;
-
-                    if(!pool.contains("DUSD-DFI")){
-                        if(((JSONObject)transaction).get("id").toString().contains(pool.replace("DUSD","USD"))){
-                            JSONObject price =(JSONObject)jsonObject.get("price");
-                            JSONObject aggregated =(JSONObject)price.get("aggregated");
-                            String amount =aggregated.get("amount").toString();
-                            return amount;
-                        }
-                    }else{
-                        return "1";
+            JSONArray prices = GetAllOceanData("https://ocean.defichain.com/v0/mainnet/prices?size=200");
+            for (Object transaction : prices) {
+                JSONObject jsonObject = (JSONObject) transaction;
+                if (!pool.contains("DUSD-DFI")) {
+                    if (((JSONObject) transaction).get("id").toString().contains(pool.replace("DUSD", "USD"))) {
+                        JSONObject price = (JSONObject) jsonObject.get("price");
+                        JSONObject aggregated = (JSONObject) price.get("aggregated");
+                        String amount = aggregated.get("amount").toString();
+                        return amount;
                     }
+                } else {
+                    return "1";
                 }
-
             }
-
         } catch (IOException e) {
             this.settingsController.logger.warning("Exception occured: " + e.toString());
         }
@@ -791,108 +802,94 @@ public class TransactionController {
             return 0;
         }
     }
-
     public String getPoolPairFromId(String poolID) {
-        String pool= "-";
+        String pool = "-";
 
-        if(!poolID.isEmpty() &&  !poolID.contains("_") && !poolID.contains("-")){
-        if(Integer.parseInt(poolID)<=14){
+        if (!poolID.isEmpty() && !poolID.contains("_") && !poolID.contains("-")) {
+            if (Integer.parseInt(poolID) <= 14) {
 
-        switch (poolID) {
-            case "0":
-            case "0.0":
-                pool = "DFI";
-                break;
-            case "1":
-            case "1.0":
-                pool = "ETH";
-                break;
-            case "2":
-            case "2.0":
-                pool = "BTC";
-                break;
-            case "3":
-            case "3.0":
-                pool = "USDT";
-                break;
-            case "4":
-            case "4.0":
-                pool = "ETH-DFI";
-                break;
-            case "5":
-            case "5.0":
-                pool = "BTC-DFI";
-                break;
-            case "6":
-            case "6.0":
-                pool = "USDT-DFI";
-                break;
-            case "7":
-            case "7.0":
-                pool = "DOGE";
-                break;
-            case "8":
-            case "8.0":
-                pool = "DOGE-DFI";
-                break;
-            case "9":
-            case "9.0":
-                pool = "LTC";
-                break;
-            case "10":
-            case "10.0":
-                pool = "LTC-DFI";
-                break;
-            case "11":
-            case "11.0":
-                pool = "BCH";
-                break;
-            case "12":
-            case "12.0":
-                pool = "BCH-DFI";
-                break;
-            case "13":
-            case "13.0":
-                pool = "USDC";
-                break;
-            case "14":
-            case "14.0":
-                pool = "USDC-DFI";
-                break;
-            default:
-                pool = "-";
-                break;
-        }
-        }else{
-
-            try {
-                if(this.tokens ==""){
-
-                HttpURLConnection connection = (HttpURLConnection) new URL("https://ocean.defichain.com/v0/mainnet/tokens?size=1000").openConnection();
-
-                try (BufferedReader br = new BufferedReader(new InputStreamReader(connection.getInputStream()))) {
-                    this.tokens  = br.readLine();
-                } catch (Exception ex) {
-                    this.settingsController.logger.warning("Exception occured: " + ex.toString());
+                switch (poolID) {
+                    case "0":
+                    case "0.0":
+                        pool = "DFI";
+                        break;
+                    case "1":
+                    case "1.0":
+                        pool = "ETH";
+                        break;
+                    case "2":
+                    case "2.0":
+                        pool = "BTC";
+                        break;
+                    case "3":
+                    case "3.0":
+                        pool = "USDT";
+                        break;
+                    case "4":
+                    case "4.0":
+                        pool = "ETH-DFI";
+                        break;
+                    case "5":
+                    case "5.0":
+                        pool = "BTC-DFI";
+                        break;
+                    case "6":
+                    case "6.0":
+                        pool = "USDT-DFI";
+                        break;
+                    case "7":
+                    case "7.0":
+                        pool = "DOGE";
+                        break;
+                    case "8":
+                    case "8.0":
+                        pool = "DOGE-DFI";
+                        break;
+                    case "9":
+                    case "9.0":
+                        pool = "LTC";
+                        break;
+                    case "10":
+                    case "10.0":
+                        pool = "LTC-DFI";
+                        break;
+                    case "11":
+                    case "11.0":
+                        pool = "BCH";
+                        break;
+                    case "12":
+                    case "12.0":
+                        pool = "BCH-DFI";
+                        break;
+                    case "13":
+                    case "13.0":
+                        pool = "USDC";
+                        break;
+                    case "14":
+                    case "14.0":
+                        pool = "USDC-DFI";
+                        break;
+                    default:
+                        pool = "-";
+                        break;
                 }
-                }
+            } else {
+                try {
+                    if (this.tokens == null) {
+                        this.tokens = GetAllOceanData("https://ocean.defichain.com/v0/mainnet/tokens?size=200");
+                    }
 
-                JSONObject obj = (JSONObject) JSONValue.parse(this.tokens );
-                if (obj.get("data") != null) {
-                    JSONArray data = (JSONArray) obj.get("data");
-
-                    for (Object token : data) {
+                    for (Object token : this.tokens) {
                         JSONObject jsonToken = (JSONObject) token;
                         if (jsonToken.get("id").toString().equals(poolID)) {
                             pool = jsonToken.get("symbol").toString();
                         }
-
                     }
+                } catch (IOException e) {
+                    this.settingsController.logger.warning("Exception occured: " + e.toString());
                 }
-            } catch (IOException e) {
-                this.settingsController.logger.warning("Exception occured: " + e.toString());
             }
-        }}
+        }
         return pool;
     }
 
@@ -900,23 +897,13 @@ public class TransactionController {
         String pool= "-";
 
         try {
-            HttpURLConnection connection = (HttpURLConnection) new URL("https://ocean.defichain.com/v0/mainnet/tokens?size=1000").openConnection();
-            String jsonText = "";
-            try (BufferedReader br = new BufferedReader(new InputStreamReader(connection.getInputStream()))) {
-                jsonText = br.readLine();
-            } catch (Exception ex) {
-                this.settingsController.logger.warning("Exception occured: " + ex.toString());
+            if (this.tokens == null) {
+                this.tokens = GetAllOceanData("https://ocean.defichain.com/v0/mainnet/tokens?size=200");
             }
-            JSONObject obj = (JSONObject) JSONValue.parse(jsonText);
-            if (obj.get("data") != null) {
-                JSONArray data = (JSONArray) obj.get("data");
-
-                for (Object token : data) {
-                    JSONObject jsonToken = (JSONObject) token;
-                    if (jsonToken.get("symbol").toString().contains(poolID)) {
-                        return pool = jsonToken.get("id").toString();
-                    }
-
+            for (Object token : this.tokens) {
+                JSONObject jsonToken = (JSONObject) token;
+                if (jsonToken.get("symbol").toString().contains(poolID)) {
+                    return pool = jsonToken.get("id").toString();
                 }
             }
         } catch (IOException e) {
